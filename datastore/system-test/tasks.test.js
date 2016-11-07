@@ -1,62 +1,72 @@
-// Copyright 2015-2016, Google, Inc.
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/**
+ * Copyright 2016, Google, Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 'use strict';
 
-var async = require('async');
-var tasks = require('../tasks');
-var taskIds = [];
+const datastore = require(`@google-cloud/datastore`)();
+const tasks = require(`../tasks`);
 
-describe('datastore:tasks', function () {
-  after(function (done) {
-    async.parallel(taskIds.map(function (taskId) {
-      return function (cb) {
-        tasks.deleteEntity(taskId, cb);
-      };
-    }), done);
+describe(`datastore:tasks`, () => {
+  const description = `description`;
+  let key;
+
+  after(() => datastore.delete(key));
+
+  it(`should add a task`, () => {
+    return tasks.addTask(description)
+      .then((taskKey) => {
+        key = taskKey;
+        return datastore.get(key);
+      })
+      .then((results) => {
+        const task = results[0];
+        const taskKey = task[datastore.KEY];
+        assert.equal(taskKey.id, key.id);
+        assert.equal(task.description, description);
+      });
   });
 
-  it('should add a task', function (done) {
-    getTaskId(done);
+  it(`should mark a task as done`, () => {
+    return tasks.markDone(key.id)
+      .then(() => datastore.get(key))
+      .then((results) => {
+        const task = results[0];
+        const taskKey = task[datastore.KEY];
+        assert.equal(taskKey.id, key.id);
+        assert.equal(task.description, description);
+        assert.equal(task.done, true);
+      });
   });
 
-  it('should mark a task as done', function (done) {
-    getTaskId(function (err, taskId) {
-      assert.ifError(err);
-      tasks.updateEntity(taskId, done);
-    });
+  it(`should list tasks`, () => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        tasks.listTasks().then(resolve, reject);
+      }, 5000);
+    })
+      .then((tasks) => {
+        tasks = tasks.filter((task) => task[datastore.KEY].id === key.id);
+        assert.equal(tasks.length, 1);
+      });
   });
 
-  it('should list tasks', function (done) {
-    tasks.retrieveEntities(done);
+  it(`should delete a task`, () => {
+    return tasks.deleteTask(key.id)
+      .then(() => datastore.get(key))
+      .then((results) => {
+        assert.equal(results[0], undefined);
+      });
   });
-
-  it('should delete a task', function (done) {
-    getTaskId(function (err, taskId) {
-      assert.ifError(err);
-      tasks.deleteEntity(taskId, done);
-    });
-  });
-
-  function getTaskId (callback) {
-    tasks.addEntity('description', function (err, taskKey) {
-      if (err) {
-        return callback(err);
-      }
-
-      var taskId = taskKey.path.pop();
-      taskIds.push(taskId);
-      callback(null, taskId);
-    });
-  }
 });
