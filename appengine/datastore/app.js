@@ -20,6 +20,8 @@
 const express = require('express');
 const crypto = require('crypto');
 
+require('@google-cloud/debug-agent').start();
+
 const app = express();
 app.enable('trust proxy');
 
