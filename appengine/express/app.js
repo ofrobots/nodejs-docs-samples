@@ -23,6 +23,8 @@ const logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 
+const debug = require('@google-cloud/debug-agent').start();
+
 const app = express();
 app.enable('trust proxy');
 // [END setup]

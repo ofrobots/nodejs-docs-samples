@@ -19,7 +19,7 @@ const express = require('express');
 const router = express.Router();
 
 // [START hello_world]
-router.get('/', (req, res) => {
+router.get('/', function(req, res) {
   res.render('index', {
     title: 'Hello World! Express.js on Google App Engine.'
   });

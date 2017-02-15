@@ -13,6 +13,7 @@
     "test": "cd ../..; npm run t -- appengine/express/test/*.test.js"
   },
   "dependencies": {
+    "@google-cloud/debug-agent": "^0.10.2",
     "body-parser": "1.16.0",
     "cookie-parser": "1.4.3",
     "debug": "2.6.0",
